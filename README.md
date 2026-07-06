@@ -1,7 +1,8 @@
 # prompt-anatomy
 
-A [Claude Code](https://claude.com/claude-code) skill that turns a rough,
-one-line task into a **well-structured prompt for Claude** — laid out by an
+A [Claude Code](https://claude.com/claude-code) skill that turns rough task
+requests into focused, execution-ready prompts — using only the context,
+guardrails, and evidence checks the task actually needs. Laid out by an
 11-part prompt anatomy:
 
 > **Task · Context · Skill · Effort · Act · Scope · Delegate · Evidence · Memory · Checkpoint · Report**
@@ -35,7 +36,7 @@ cp prompt-anatomy/SKILL.md ~/.claude/skills/prompt-anatomy/SKILL.md
 Now in any Claude Code session, ask something like:
 
 - "help me write a prompt to have Claude clean up the logging in my API"
-- "buna nasıl prompt yazayım: X"
+- "how should I prompt this: X"
 - "make this prompt better: …"
 
 and the skill drafts the structured prompt for you. It triggers on
@@ -45,90 +46,91 @@ prompt-*authoring* requests — not when you actually want the task done.
 
 ### 1. A bug fix
 
-**Input:** *"prompt yaz: React uygulamamda dark-mode toggle kalıcı olmuyor, sayfayı yenileyince sıfırlanıyor"*
+**Input:** *"write a prompt: my React app's dark-mode toggle doesn't persist, it resets on page refresh"*
 
 ```
-I'm building a React web app; the dark-mode toggle works during a session but
-resets to light on every page refresh. With that in mind: make the theme choice
-persist across reloads.
+Task: I'm building a React web app; the dark-mode toggle works during a session but resets to light on every page refresh. With that in mind: make the theme choice persist across reloads.
 
-Context: use the existing theme setup in this repo (the toggle component and
-wherever theme state lives) as the source of truth — don't pull in a new theming
-library.
+Context: use the existing theme setup in this repo (the toggle component and wherever theme state lives) as the source of truth — don't pull in a new theming library.
 
-Effort: routine. The fix is probably small, but scope it like it's at the top of
-your range so you catch why it isn't persisting rather than papering over it.
+Skill: no dedicated skill fits this — here's what good looks like: the app reads the saved theme before first paint, so there's no flash of the wrong theme on load.
 
-Act: when you've found the cause, fix it — don't ask me which storage mechanism
-to use, pick the idiomatic one and tell me why.
+Effort: routine. The fix is probably small, but scope it like it's at the top of your range so you catch why it isn't persisting rather than papering over it.
 
-Scope: the simplest thing that works — persist and restore the theme, nothing
-more. No settings page, no new abstraction.
+Act: when you've found the cause, fix it — don't ask me which storage mechanism to use, pick the idiomatic one and tell me why.
 
-Evidence: before saying it's fixed, actually reload the app and confirm the theme
-holds. If you couldn't run it, say so.
+Scope: the simplest thing that works — persist and restore the theme, nothing more. No settings page, no new abstraction.
+
+Delegate: not needed — this is small enough to fix in a single pass.
+
+Evidence: before saying it's fixed, actually reload the app and confirm the theme holds. If you couldn't run it, say so.
+
+Memory: if I'm already persisting other preferences somewhere in this app (a settings context, a single storage key, etc.), tell me so future changes follow the same pattern.
+
+Checkpoint: pause only if fixing this means restructuring how theme state is managed app-wide.
 
 Report: open with the root cause and the one-line fix, then the details.
 ```
-
-*Dropped Skill, Delegate, Memory, Checkpoint — a small single-file fix doesn't need them.*
 
 ### 2. A data analysis
 
 **Input:** *"help me write a prompt for Claude to analyze our churn — I've got a customers.csv"*
 
 ```
-I run a subscription product and I'm trying to understand why customers cancel,
-so I can prioritize what to fix next quarter. With that in mind: analyze churn in
-my data and tell me what actually drives it.
+Task: I run a subscription product and I'm trying to understand why customers cancel, so I can prioritize what to fix next quarter. With that in mind: analyze churn in my data and tell me what actually drives it.
 
-Context: the data is in customers.csv [?] (which columns are the churn flag and
-the signup/cancel dates?). Use only what's in the file — don't assume fields that
-aren't there.
+Context: the data is in customers.csv [?] (which columns are the churn flag and the signup/cancel dates?). Use only what's in the file — don't assume fields that aren't there.
 
-Effort: hard. This is the analysis a quarter's roadmap rests on — scope it like
-it's at the top of your range. I care more about a correct, defensible finding
-than a fast one.
+Skill: no dedicated skill fits this — here's what good looks like: drivers ranked by effect size, each backed by a number you actually computed, not a hunch.
 
-Act: explore the data, form a view, and give me a recommendation — don't hand me
-five caveated maybes.
+Effort: hard. This is the analysis a quarter's roadmap rests on — scope it like it's at the top of your range. I care more about a correct, defensible finding than a fast one.
 
-Evidence: every claim ("X segment churns 2x more") must trace to a number you
-computed from this file. Show the check. If a result is noisy or the sample is
-small, say so.
+Act: explore the data, form a view, and give me a recommendation — don't hand me five caveated maybes.
 
-Report: open with the top 2-3 churn drivers and what you'd do about each, then the
-supporting numbers.
+Scope: just the analysis and the write-up — no dashboard, no automated pipeline.
+
+Delegate: if distinct cohorts (plan tier, signup channel) need separate digging, split that across subagents and bring back one synthesis rather than five partial views.
+
+Evidence: every claim ("X segment churns 2x more") must trace to a number you computed from this file. Show the check. If a result is noisy or the sample is small, say so.
+
+Memory: if you learn something about how churn gets logged here (e.g. cancellations show up with a lag), tell me so I don't have to re-explain it next time.
+
+Checkpoint: pause only if the data itself looks unreliable enough that any finding would be built on sand.
+
+Report: open with the top 2-3 churn drivers and what you'd do about each, then the supporting numbers.
 ```
 
-*`[?]` flags the two facts only you can supply. Dropped Skill, Delegate, Scope, Checkpoint.*
+*`[?]` flags the two facts only you can supply.*
 
 ### 3. A writing task
 
 **Input:** *"draft a prompt to get Claude to write release notes from my git log"*
 
 ```
-I'm shipping a release and need human-readable release notes that our users —
-not developers — will actually read. With that in mind: turn my git log into
-release notes.
+Task: I'm shipping a release and need human-readable release notes that our users — not developers — will actually read. With that in mind: turn my git log into release notes.
 
-Context: I'll paste the git log [?] (or point you at the tag range). Treat it as
-the source — don't invent features that aren't in the commits.
+Context: I'll paste the git log [?] (or point you at the tag range). Treat it as the source — don't invent features that aren't in the commits.
 
-Effort: routine, but the audience is non-technical, so the hard part is
-translation, not listing. Scope it like it's at the top of your range there.
+Skill: no dedicated skill fits this — here's what good looks like: a two-line highlights section up top, then grouped bullets, all in plain language.
 
-Act: group and prioritize the changes yourself — don't ask me to categorize each
-commit. If a commit is internal-only (refactor, chore), leave it out.
+Effort: routine, but the audience is non-technical, so the hard part is translation, not listing. Scope it like it's at the top of your range there.
 
-Scope: just the notes — a short "highlights" section plus grouped changes. No
-changelog tooling, no template system.
+Act: group and prioritize the changes yourself — don't ask me to categorize each commit. If a commit is internal-only (refactor, chore), leave it out.
 
-Report: give me the finished notes in Markdown, headline first. Plain language,
-no commit hashes or internal jargon.
+Scope: just the notes — a short "highlights" section plus grouped changes. No changelog tooling, no template system.
+
+Delegate: not needed — this is a single-pass writing task.
+
+Evidence: before finishing, check that every note traces to an actual commit in the range — don't invent anything that isn't there.
+
+Memory: if you notice we consistently write commit messages that are too vague to turn into notes, mention it — that's worth fixing at the source, not just working around here.
+
+Checkpoint: pause only if the log is genuinely ambiguous about what's user-facing versus internal.
+
+Report: give me the finished notes in Markdown, headline first. Plain language, no commit hashes or internal jargon.
 ```
 
-*Dropped Skill, Delegate, Evidence, Memory, Checkpoint. `[?]` marks the input you'll paste.*
+*`[?]` marks the input you'll paste.*
 
 ## The 11 sections
 

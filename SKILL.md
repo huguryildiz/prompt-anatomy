@@ -100,34 +100,33 @@ can adapt. Adapt freely — the seed is a starting point, not a script.
 
 **Input:** "help me write a prompt to have claude clean up the logging in my api"
 
-**Output:**
+**Output:** (all 11 sections shown filled in, to illustrate the full anatomy — in
+a real prompt, drop whichever don't apply per step 4 above)
 
 ````
-I'm hardening a Python API service that a small team maintains; noisy,
-inconsistent logging is making incidents slow to debug. With that in mind:
-standardize the logging across the service.
+Task: I'm hardening a Python API service that a small team maintains; noisy, inconsistent logging is making incidents slow to debug. With that in mind: standardize the logging across the service.
 
-Context: use the existing logging setup in this repo (logger config, existing
-call sites) as the source of truth — don't introduce a new logging framework.
+Context: use the existing logging setup in this repo (logger config, existing call sites) as the source of truth — don't introduce a new logging framework.
 
-Effort: routine-to-hard. Scope it like it's at the top of your range — I'd
-rather you catch the subtle cases (swallowed exceptions, wrong levels).
+Skill: no dedicated skill fits this — here's what good looks like: consistent structured messages, correct levels (no info-level errors), and no swallowed exceptions.
 
-Act: when you have enough to act, act. If you're weighing a convention, pick one
-and tell me why rather than asking.
+Effort: routine-to-hard. Scope it like it's at the top of your range — I'd rather you catch the subtle cases (swallowed exceptions, wrong levels).
 
-Scope: the simplest thing that works — normalize levels and messages, don't
-refactor the surrounding code or add config knobs I didn't ask for.
+Act: when you have enough to act, act. If you're weighing a convention, pick one and tell me why rather than asking.
 
-Evidence: before saying it's done, run the test suite (or the service) and
-report what you actually observed. If something's unverified, say so.
+Scope: the simplest thing that works — normalize levels and messages, don't refactor the surrounding code or add config knobs I didn't ask for.
+
+Delegate: if the call sites span many independent modules, split the sweep across subagents by module and keep working — verify each module's changes against the convention before merging.
+
+Evidence: before saying it's done, run the test suite (or the service) and report what you actually observed. If something's unverified, say so.
+
+Memory: if you spot a recurring anti-pattern (e.g. a bare `except:` block or a module that logs at the wrong level everywhere), tell me at the end — that's worth fixing at the source, not just patching here.
 
 Checkpoint: pause only if a change is destructive or genuinely changes scope.
 
 Report: open with what changed and why, then the details.
 ````
 
-*Note:* I left "who it's for" implicit and dropped **Skill**, **Delegate**, and
-**Memory** — a single-context cleanup doesn't need them. Set **Effort** yourself
-if "routine-to-hard" is off. `[?]` Do you want the service actually run, or just
+*Note:* I left "who it's for" implicit. Set **Effort** yourself if
+"routine-to-hard" is off. `[?]` Do you want the service actually run, or just
 the tests?

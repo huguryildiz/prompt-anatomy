@@ -1,132 +1,176 @@
 ---
 name: prompt-anatomy
 description: >-
-  Turn a rough, one-line task into a well-structured prompt for Claude, laid out
-  by the 11-part prompt anatomy (Task, Context, Skill, Effort, Act, Scope,
-  Delegate, Evidence, Memory, Checkpoint, Report). Use this whenever the user
-  wants help WRITING or IMPROVING a prompt/instruction they will give to Claude
-  (or another agent) — phrases like "help me write a prompt", "how should I ask
-  Claude to...", "draft a prompt for...", "make this prompt better", "turn this
-  into a good prompt", "prompt yaz", "buna nasıl prompt yazayım". Do NOT use it
-  to actually perform the underlying task — only to author the prompt for it.
+  Use when the user wants help WRITING or IMPROVING a prompt or task
+  instruction they will hand to Claude or another agent — "help me write a
+  prompt", "how should I ask Claude to...", "draft a prompt for...", "make
+  this prompt better", "prompt yaz", "buna nasıl prompt yazayım". The
+  deliverable is the prompt text itself, never the task's result. Do NOT use
+  when the user wants the underlying task performed, when "the prompt" is a
+  string inside application code to be edited, or for persistent system
+  prompts / agent personas — those are different genres.
 ---
 
 # Prompt Anatomy
 
 Turn a rough task into a copy-paste-ready prompt, organized by an 11-part
-anatomy. The point isn't a rigid template — it's to make sure the prompt carries
-the things a strong model actually needs: the *why* behind the task, where to
-find context, how hard to push, when to stop, and how to report back. A model
-with good theory of mind does far more with a well-framed goal than with a pile
-of step-by-step commands.
+anatomy: five **core** sections every prompt needs, three **dials** that
+override the recipient's defaults, and three **extras** for when they apply.
+A model with good theory of mind does far more with a well-framed goal than
+with a pile of step-by-step commands — so the anatomy carries the *why*, where
+the truth lives, what "done" means, and how to prove it.
 
 ## When this triggers
 
-The user wants to *author or sharpen a prompt* they will hand to Claude — not to
-have the task done. If they actually want the task done, ignore this skill and
-just do it.
+The user wants to *author or sharpen a prompt* they will hand to Claude — not
+to have the task done. If they actually want the task done, ignore this skill
+and just do it.
 
 ## Workflow
 
-1. **Read the rough task.** Extract the real goal and who it's for. If the task
-   is a single verb ("summarize this"), that's fine — you'll fill what you can
-   and flag the rest.
-2. **Fill the 11 sections below.** Write each from the user's point of view (the
-   prompt is *theirs*, addressed to Claude). Draw concrete details from the
-   conversation where they exist.
-3. **Mark decisions, don't invent them.** Any section that genuinely depends on a
-   choice only the user can make (effort level, target file, who the output is
-   for, whether subagents are wanted) gets a `[?]` with a short inline question.
-   Never fabricate context, file paths, or constraints to look complete.
-4. **Drop sections that don't apply.** Not every task needs Delegate or Skill. A
-   throwaway one-off doesn't need Memory. Omit a section rather than pad it — but
-   say briefly why you dropped it.
-5. **Return the drafted prompt in a single fenced block** so it's copy-paste
-   ready, followed by a one-line note on any `[?]` the user should resolve.
+1. **Read the rough task.** Extract the real goal, who it's for, and the
+   **recipient runtime** — Claude Code, claude.ai, or another agent/API. If
+   the runtime is unknown and it changes the prompt, that's a `[?]`.
+2. **Fill the five core sections** (Task, Context, Done, Scope, Evidence).
+   Write from the user's point of view — the prompt is *theirs*, addressed to
+   Claude. Draw concrete details from the conversation where they exist.
+3. **Add dials only to override a default.** Effort, Autonomy, and Report are
+   already a Claude Code recipient's defaults — include one only when the task
+   needs a non-default (pause more often, an unusual effort split, a specific
+   deliverable format). For claude.ai/API recipients the dials earn their
+   place.
+4. **Add extras only when they apply.** Skill needs a named skill; Delegate
+   needs genuinely independent parallel subtasks; Memory needs a recurring
+   workflow. Drop non-applicable sections silently.
+5. **Return the prompt in a single fenced block**, `[?]` markers inline, plus
+   at most one line of notes after the block.
+
+**The `[?]` rule.** Any decision only the user can make (target file, audience,
+effort level, whether subagents are wanted) gets a `[?]` with a short inline
+question — *inside the fenced block, in the section it belongs to*. The block
+must never read more confident than you are. Max 3 markers; if more decisions
+are genuinely open, ask the user first, then draft. Never fabricate context,
+file paths, or constraints to look complete.
 
 ## The 11 sections
 
-Each section below gives its *intent* (what it's for) and a *seed phrasing* you
-can adapt. Adapt freely — the seed is a starting point, not a script.
+Each section gives its *intent* and a *seed phrasing* to adapt freely — the
+seed is a starting point, not a script.
 
-1. **Task** — the goal + the why, not the steps.
-   *Seed:* "I'm working on [LARGER GOAL] for [WHO IT'S FOR]. They need [WHAT THE
-   OUTPUT ENABLES]. With that in mind: [THE TASK]."
+### Core — default in
+
+1. **Task** — the goal + the why + who it's for, not the steps.
+   *Seed:* "I'm working on [LARGER GOAL] for [WHO IT'S FOR]. They need [WHAT
+   THE OUTPUT ENABLES]. With that in mind: [THE TASK]."
 
 2. **Context** — point at where the truth lives; forbid guessing.
-   *Seed:* "Use everything in [this project / these files / CLAUDE.md] first. If
-   it isn't there, pull it from [source] — don't guess."
+   *Seed:* "Use everything in [this project / these files / CLAUDE.md] first.
+   If it isn't there, pull it from [source] — don't guess."
 
-3. **Skill** — invoke a saved skill, or paste a reference of what "good" is.
-   *Seed:* "Apply /[skill-name] fully. If no skill fits, here's what good looks
-   like: [example]." *(Drop if no skill or exemplar is relevant.)*
+3. **Done** — the test the output must pass: an observable result, an
+   exemplar, or an invariant. This is what Evidence audits against.
+   *Seed:* "Done means [OBSERVABLE RESULT], checkable by [TEST / CHECK].
+   Here's what good looks like: [exemplar]."
 
-4. **Effort** — set the difficulty so the model doesn't undersell itself.
-   *Seed:* "This is a [routine / hard / hardest-unsolved] problem. Scope it like
-   it's at the top of your range."
+4. **Scope** — the simplest thing that works, plus anti-goals.
+   *Seed:* "Do the simplest thing that works well. No extra features,
+   refactors, abstractions, or error handling for impossible cases. If I'm
+   describing a problem, the deliverable is your assessment."
 
-5. **Act** — stop over-planning; act on enough information.
-   *Seed:* "When you have enough to act, act. Don't re-derive what's established,
-   re-litigate my decisions, or survey options you won't pursue. Weighing a
-   choice? Give a recommendation."
+5. **Evidence** — audit claims before reporting, against Done.
+   *Seed:* "Before reporting, audit every claim against a real result from
+   this session — a file, a search, a run — and against the Done condition
+   above. If it's unverified, say so."
 
-6. **Scope** — the simplest thing that works.
-   *Seed:* "Do the simplest thing that works well. No extra features, refactors,
-   abstractions, or error handling for impossible cases. If I'm describing a
-   problem, the deliverable is your assessment."
+### Dials — only to override the recipient's defaults
 
-7. **Delegate** — hand independent subtasks to subagents.
-   *Seed:* "Split independent subtasks across subagents and keep working. Verify
-   with a fresh-context subagent against the spec every [interval]." *(Drop for
-   small single-context tasks.)*
+6. **Effort** — one honest level, with the consequence named. Never a blanket
+   "maximum effort": if every task is top-of-range, the dial carries no
+   signal, and it fights Scope.
+   *Seed:* "This is routine — don't overthink it." / "This is hard in one
+   place: [THE SUBTLE PART] is the point — spend the effort there, not on
+   breadth."
 
-8. **Evidence** — audit claims before reporting.
-   *Seed:* "Before reporting, audit every claim against a real result from this
-   session — a file, a search, a run. If it's unverified, say so."
+7. **Autonomy** — when to act, when to pause.
+   *Seed:* "When you have enough to act, act — don't re-derive what's
+   established or re-litigate my decisions; weighing a choice, give a
+   recommendation. Pause only for destructive actions, real scope changes, or
+   input only I can give. Don't end your turn on a promise."
 
-9. **Memory** — surface durable lessons at the end.
-   *Seed:* "If you learn something about me or this project that'll matter next
-   time, tell me at the end so I can save it." *(Drop for pure one-offs.)*
+8. **Report** — outcome first, plus the deliverable's format.
+   *Seed:* "Open with the outcome — the TLDR I'd ask for. Deliver as
+   [format / file / language]. Complete sentences; clear beats short."
 
-10. **Checkpoint** — pause only when it truly must.
-    *Seed:* "Pause only for destructive actions, real scope changes, or input
-    only I can give. Otherwise go end to end. Don't end your turn on a promise."
+### Extras — only when they apply
 
-11. **Report** — outcome first, readable prose.
-    *Seed:* "Open with the outcome — the TLDR I'd ask for. Complete sentences, no
-    arrow chains or shorthand. Clear beats short."
+9. **Skill** — invoke a saved skill by name. *(Drop if none exists; an
+   exemplar of "good" belongs in Done, not here.)*
+   *Seed:* "Apply /[skill-name] fully."
 
-## Example
+10. **Delegate** — hand independent subtasks to subagents. *(Drop for
+    single-context tasks.)*
+    *Seed:* "Split independent subtasks across subagents and keep working.
+    Verify with a fresh-context subagent against the spec every [interval]."
 
-**Input:** "help me write a prompt to have claude clean up the logging in my api"
+11. **Memory** — surface durable lessons. *(Drop for one-offs, and for
+    recipients with persistent memory of their own — Claude Code already has
+    one.)*
+    *Seed:* "If you learn something about me or this project that'll matter
+    next time, tell me at the end so I can save it."
 
-**Output:** (all 11 sections shown filled in, to illustrate the full anatomy — in
-a real prompt, drop whichever don't apply per step 4 above)
+## Examples
+
+### Minimal — a trivial task keeps only what earns its place
+
+**Input:** "help me write a prompt for claude to fix the typo 'recieve' →
+'receive' everywhere in my repo"
+
+````
+Task: I'm cleaning up a repo-wide misspelling. Fix every "recieve" to "receive", including case variants (Recieve/RECIEVE).
+
+Scope: only that literal string and its case variants — don't touch other typos or reformat anything you pass over.
+
+Done: a case-insensitive grep for "recieve" returns zero matches.
+
+Evidence: run that grep after the replace and paste the result — report the count of files/occurrences actually changed, not an estimate.
+
+Autonomy: go end to end; pause only if the string appears somewhere machine-facing (an identifier, API field name, URL, config key) where "fixing" it would break something.
+````
+
+Dropped: Context (the repo itself is the context), Effort/Report (recipient is
+Claude Code — defaults cover them; Autonomy stays because the machine-facing
+pause is a non-default), Skill, Delegate, Memory.
+
+### Full — all 11 shown to illustrate the anatomy
+
+**Input:** "help me write a prompt to have claude clean up the logging in my
+api"
+
+**Output:** (all 11 sections filled in to illustrate — in a real prompt, drop
+whichever don't apply per steps 3–4 above)
 
 ````
 Task: I'm hardening a Python API service that a small team maintains; noisy, inconsistent logging is making incidents slow to debug. With that in mind: standardize the logging across the service.
 
-Context: use the existing logging setup in this repo (logger config, existing call sites) as the source of truth — don't introduce a new logging framework.
+Context: use the existing logging setup in this repo (logger config, existing call sites) as the source of truth — don't introduce a new logging framework. [?] Is there a target convention already agreed (e.g. structured JSON), or should Claude infer one from the best current call sites?
 
-Skill: no dedicated skill fits this — here's what good looks like: consistent structured messages, correct levels (no info-level errors), and no swallowed exceptions.
-
-Effort: routine-to-hard. Scope it like it's at the top of your range — I'd rather you catch the subtle cases (swallowed exceptions, wrong levels).
-
-Act: when you have enough to act, act. If you're weighing a convention, pick one and tell me why rather than asking.
+Done: consistent message shape across the service, correct levels (no info-level errors), no swallowed exceptions — and the test suite still passes.
 
 Scope: the simplest thing that works — normalize levels and messages, don't refactor the surrounding code or add config knobs I didn't ask for.
 
-Delegate: if the call sites span many independent modules, split the sweep across subagents by module and keep working — verify each module's changes against the convention before merging.
+Evidence: before saying it's done, run the test suite (or the service) and check the result against Done above. If something's unverified, say so.
 
-Evidence: before saying it's done, run the test suite (or the service) and report what you actually observed. If something's unverified, say so.
+Effort: hard in one specific place — the subtle cases (swallowed exceptions, wrong levels) are the point. Spend the effort there, not on breadth.
 
-Memory: if you spot a recurring anti-pattern (e.g. a bare `except:` block or a module that logs at the wrong level everywhere), tell me at the end — that's worth fixing at the source, not just patching here.
-
-Checkpoint: pause only if a change is destructive or genuinely changes scope.
+Autonomy: when you have enough to act, act — if you're weighing a convention, pick one and tell me why rather than asking. Pause only if a change is destructive or genuinely changes scope.
 
 Report: open with what changed and why, then the details.
+
+Skill: apply /[your-logging-skill] if one is saved — otherwise Done above is the bar.
+
+Delegate: if the call sites span many independent modules, split the sweep across subagents by module — verify each module's changes against the convention before merging.
+
+Memory: if you spot a recurring anti-pattern (e.g. a bare `except:` block, a module that logs at the wrong level everywhere), tell me at the end — that's worth fixing at the source, not just patching here.
 ````
 
-*Note:* I left "who it's for" implicit. Set **Effort** yourself if
-"routine-to-hard" is off. `[?]` Do you want the service actually run, or just
-the tests?
+*Note:* one `[?]` to resolve — the target convention.

@@ -3,22 +3,28 @@
 A [Claude Code](https://claude.com/claude-code) skill that turns rough task
 requests into focused, execution-ready prompts — using only the context,
 guardrails, and evidence checks the task actually needs. Laid out by an
-11-part prompt anatomy:
+11-part prompt anatomy in three tiers:
 
-> **Task · Context · Skill · Effort · Act · Scope · Delegate · Evidence · Memory · Checkpoint · Report**
+> **Core:** Task · Context · Done · Scope · Evidence
+> **Dials:** Effort · Autonomy · Report
+> **Extras:** Skill · Delegate · Memory
 
 You describe what you want in a sentence; the skill returns a copy-paste-ready
-prompt with each relevant section filled in, and marks any decision that's yours
-to make with `[?]`. Sections that don't apply are dropped, not padded.
+prompt with each relevant section filled in, and marks any decision that's
+yours to make with an inline `[?]`. Core sections are always in; dials appear
+only to override the recipient's defaults; extras only when they apply.
+Sections that don't earn their place are dropped, not padded.
 
 ## Why this one
 
 Unlike generic prompt-structuring tools that apply academic frameworks
 (CO-STAR, RTF, RISEN…), `prompt-anatomy` encodes the **behavior-oriented**
-sections that actually matter for Claude's agentic work — *Act* (stop
-over-planning), *Scope* (simplest thing that works), *Evidence* (audit before
-reporting), *Checkpoint* (pause only when it must), *Report* (outcome first).
-It frames the goal and the *why*, then gets out of the model's way.
+sections that actually matter for Claude's agentic work — *Done* (the test the
+output must pass), *Evidence* (audit claims before reporting — against Done),
+*Scope* (simplest thing that works), *Autonomy* (act on enough information,
+pause only when it must), *Report* (outcome first). It frames the goal and the
+*why*, then gets out of the model's way — and it knows that a prompt aimed at
+Claude Code shouldn't restate the harness's own defaults back to it.
 
 The anatomy is adapted from Ruben Hassid's *"The Anatomy of a Claude 5 prompt"*
 infographic (["How to AI"](https://how-to-ai.guide)).
@@ -40,7 +46,9 @@ Now in any Claude Code session, ask something like:
 - "make this prompt better: …"
 
 and the skill drafts the structured prompt for you. It triggers on
-prompt-*authoring* requests — not when you actually want the task done.
+prompt-*authoring* requests — not when you actually want the task done, not
+when "the prompt" is a string in your application code, and not for system
+prompts or agent personas.
 
 ## Examples
 
@@ -53,24 +61,16 @@ Task: I'm building a React web app; the dark-mode toggle works during a session 
 
 Context: use the existing theme setup in this repo (the toggle component and wherever theme state lives) as the source of truth — don't pull in a new theming library.
 
-Skill: no dedicated skill fits this — here's what good looks like: the app reads the saved theme before first paint, so there's no flash of the wrong theme on load.
-
-Effort: routine. The fix is probably small, but scope it like it's at the top of your range so you catch why it isn't persisting rather than papering over it.
-
-Act: when you've found the cause, fix it — don't ask me which storage mechanism to use, pick the idiomatic one and tell me why.
+Done: the theme survives a page refresh, and the saved theme is read before first paint — no flash of the wrong theme on load.
 
 Scope: the simplest thing that works — persist and restore the theme, nothing more. No settings page, no new abstraction.
 
-Delegate: not needed — this is small enough to fix in a single pass.
+Evidence: before saying it's fixed, actually reload the app and confirm the theme holds against Done above. If you couldn't run it, say so.
 
-Evidence: before saying it's fixed, actually reload the app and confirm the theme holds. If you couldn't run it, say so.
-
-Memory: if I'm already persisting other preferences somewhere in this app (a settings context, a single storage key, etc.), tell me so future changes follow the same pattern.
-
-Checkpoint: pause only if fixing this means restructuring how theme state is managed app-wide.
-
-Report: open with the root cause and the one-line fix, then the details.
+Autonomy: pick the idiomatic storage mechanism yourself and tell me why; pause only if fixing this means restructuring how theme state is managed app-wide.
 ```
+
+*Dropped: Effort and Report (Claude Code defaults cover them), Skill, Delegate, Memory.*
 
 ### 2. A data analysis
 
@@ -81,26 +81,20 @@ Task: I run a subscription product and I'm trying to understand why customers ca
 
 Context: the data is in customers.csv [?] (which columns are the churn flag and the signup/cancel dates?). Use only what's in the file — don't assume fields that aren't there.
 
-Skill: no dedicated skill fits this — here's what good looks like: drivers ranked by effect size, each backed by a number you actually computed, not a hunch.
-
-Effort: hard. This is the analysis a quarter's roadmap rests on — scope it like it's at the top of your range. I care more about a correct, defensible finding than a fast one.
-
-Act: explore the data, form a view, and give me a recommendation — don't hand me five caveated maybes.
+Done: drivers ranked by effect size, each backed by a number computed from this file — a finding I could defend in a roadmap discussion.
 
 Scope: just the analysis and the write-up — no dashboard, no automated pipeline.
 
-Delegate: if distinct cohorts (plan tier, signup channel) need separate digging, split that across subagents and bring back one synthesis rather than five partial views.
-
 Evidence: every claim ("X segment churns 2x more") must trace to a number you computed from this file. Show the check. If a result is noisy or the sample is small, say so.
 
-Memory: if you learn something about how churn gets logged here (e.g. cancellations show up with a lag), tell me so I don't have to re-explain it next time.
+Effort: hard in one place — a correct, defensible finding matters more than a fast one. Spend the effort on validity (confounders, sample size), not on breadth of charts.
 
-Checkpoint: pause only if the data itself looks unreliable enough that any finding would be built on sand.
+Delegate: if distinct cohorts (plan tier, signup channel) need separate digging, split that across subagents and bring back one synthesis rather than five partial views.
 
 Report: open with the top 2-3 churn drivers and what you'd do about each, then the supporting numbers.
 ```
 
-*`[?]` flags the two facts only you can supply.*
+*`[?]` flags the fact only you can supply. Dropped: Autonomy (default), Skill, Memory.*
 
 ### 3. A writing task
 
@@ -109,44 +103,37 @@ Report: open with the top 2-3 churn drivers and what you'd do about each, then t
 ```
 Task: I'm shipping a release and need human-readable release notes that our users — not developers — will actually read. With that in mind: turn my git log into release notes.
 
-Context: I'll paste the git log [?] (or point you at the tag range). Treat it as the source — don't invent features that aren't in the commits.
+Context: the range is [?] (paste the log or give me the tag range). Treat it as the source — don't invent features that aren't in the commits.
 
-Skill: no dedicated skill fits this — here's what good looks like: a two-line highlights section up top, then grouped bullets, all in plain language.
+Done: a two-line highlights section up top, then grouped bullets in plain language — every note traceable to an actual commit in the range.
 
-Effort: routine, but the audience is non-technical, so the hard part is translation, not listing. Scope it like it's at the top of your range there.
+Scope: just the notes — no changelog tooling, no template system. Leave internal-only commits (refactor, chore) out; group and prioritize yourself rather than asking me to categorize each commit.
 
-Act: group and prioritize the changes yourself — don't ask me to categorize each commit. If a commit is internal-only (refactor, chore), leave it out.
+Evidence: before finishing, check the notes against Done above — nothing invented, nothing user-facing missed.
 
-Scope: just the notes — a short "highlights" section plus grouped changes. No changelog tooling, no template system.
-
-Delegate: not needed — this is a single-pass writing task.
-
-Evidence: before finishing, check that every note traces to an actual commit in the range — don't invent anything that isn't there.
-
-Memory: if you notice we consistently write commit messages that are too vague to turn into notes, mention it — that's worth fixing at the source, not just working around here.
-
-Checkpoint: pause only if the log is genuinely ambiguous about what's user-facing versus internal.
-
-Report: give me the finished notes in Markdown, headline first. Plain language, no commit hashes or internal jargon.
+Report: finished notes in Markdown, headline first. No commit hashes or internal jargon.
 ```
 
-*`[?]` marks the input you'll paste.*
+*`[?]` marks the input you'll paste. Dropped: Effort, Autonomy (defaults), Skill, Delegate, Memory.*
 
 ## The 11 sections
 
-| Section | Intent |
-|---|---|
-| **Task** | The goal + the *why*, not the steps |
-| **Context** | Point at where the truth lives; forbid guessing |
-| **Skill** | Invoke a saved skill, or paste an exemplar of "good" |
-| **Effort** | Set difficulty so the model doesn't undersell itself |
-| **Act** | Act on enough information; stop over-planning |
-| **Scope** | The simplest thing that works |
-| **Delegate** | Hand independent subtasks to subagents |
-| **Evidence** | Audit claims against real results before reporting |
-| **Memory** | Surface durable lessons at the end |
-| **Checkpoint** | Pause only when it truly must |
-| **Report** | Outcome first, readable prose |
+| Section | Tier | Intent |
+| --- | --- | --- |
+| **Task** | core | The goal + the *why* + who it's for, not the steps |
+| **Context** | core | Point at where the truth lives; forbid guessing |
+| **Done** | core | The test the output must pass — exemplar, invariant, or observable check |
+| **Scope** | core | The simplest thing that works; anti-goals |
+| **Evidence** | core | Audit claims against real results — and against Done |
+| **Effort** | dial | One honest level, with the consequence named |
+| **Autonomy** | dial | Act on enough information; pause only when it truly must |
+| **Report** | dial | Outcome first + the deliverable's format |
+| **Skill** | extra | Invoke a saved skill by name |
+| **Delegate** | extra | Hand independent subtasks to subagents |
+| **Memory** | extra | Surface durable lessons at the end |
+
+Dials are a Claude Code recipient's defaults — they appear in a prompt only to
+override one. For claude.ai/API recipients, they earn their place.
 
 ## License
 
